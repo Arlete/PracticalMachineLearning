@@ -1,0 +1,129 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Arlete Rodrigues"
+date: "1 July 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+
+In this project, the goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##1. Data
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har.
+
+The training data for this project are available at:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available at:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+
+## 1.1.  Data Load and Overview
+```{r }
+set.seed(6234)
+training <- read.csv("pml-training.csv", na.strings = c("", "NA", "#DIV/0!"))
+testing <- read.csv("pml-testing.csv", na.strings = c("", "NA", "#DIV/0!"))
+```
+Delete columns with all missing values and irrelevant variables:
+```{r }
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+training <- training[, -c(1:7)]
+testing <- testing[, -c(1:7)]
+dim(training)
+dim(testing)
+```
+Both training and testing data sets contain 53 variables.  The training data set contains 19622 observations, while the testing data set contains 20 observations.
+
+
+## 2.  Processing Data
+```{r }
+library(caret)
+subsets <- createDataPartition(y = training$classe, p = 0.70, list = FALSE)
+subTraining <- training[subsets, ]
+subTesting <- training[-subsets, ]
+```
+In order to perform cross-validation, the training data set is partionned into 2 sets: subTraining (70%) and subTesting (30%). This will be performed using random subsampling without replacement.
+
+The next plots show the levels of the variable classe in the subTraining and subTesting data sets.
+```{r }
+plot(subTraining$classe, col = "darkblue"
+    , main = "Levels of the variable classe in the subTraining data set"
+    , xlab = "Classe level"
+    , ylab = "Frequency")
+plot(subTesting$classe, col = "darkgreen"
+    , main = "Levels of the variable classe in the subTesting data set"
+    , xlab = "Classe level"
+    , ylab = "Frequency")
+```
+
+##3. Model Train
+
+
+##3.1. Random Forest
+```{r }
+library(randomForest)
+
+modelRF <- randomForest(classe ~ . , data = subTraining, method = "class")
+
+predict_modelRF <- predict(modelRF, subTesting, type = "class")
+
+library(e1071)
+confusionMatrix(predict_modelRF, subTesting$classe)
+```
+
+##3.2. Decision Tree
+```{r }
+library(rpart)
+library(rpart.plot)
+
+modelDT <- rpart(classe ~ ., data = subTraining, method = "class")
+
+predict_modelDT <- predict(modelDT, subTesting, type = "class")
+rpart.plot(modelDT, main = "Classification Tree", extra = 102, under = TRUE, faclen = 0)
+
+confusionMatrix(predict_modelDT, subTesting$classe)
+```
+
+##3.3. Support Vector Machine
+```{r }
+modelSVM <- svm(classe ~ ., data=subTraining)
+
+predict_modelSVM <- predict(modelSVM, na.omit(subTesting))
+
+confusionMatrix(predict_modelSVM, subTesting$classe)
+```
+
+##3.4. Best Model
+The lowest accuracy (0.7264) was obtain by Decision Tree model. The Random Forest model accuracy was 0.9954 (95% CI: (0.9933, 0.997)), while for the Support Vector Machine model was 0.9524 (95% CI: (0.9467, 0.9577)).
+The Random Forest algorithm performed better, so it is choosen to perform the test set prediction.
+
+
+##4. Test Set Prediction
+```{r }
+predict_randomForest <- predict(modelRF, testing, type = "class")
+predict_randomForest
+plot(predict_randomForest)
+```
+
+
+##5. Write files
+```{r } 
+pml_write_files = function(x) {
+  n = length(x)
+  for(i in 1:n) {
+    filename = paste0("prediction_case_", i, ".txt")
+    write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
+}
+pml_write_files(predict_randomForest)
+```

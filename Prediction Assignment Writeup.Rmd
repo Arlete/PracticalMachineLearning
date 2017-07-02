@@ -104,7 +104,7 @@ confusionMatrix(predict_modelSVM, subTesting$classe)
 ```
 
 ##3.4. Best Model
-The lowest accuracy (0.7264) was obtain by Decision Tree model. The Random Forest model accuracy was 0.9954 (95% CI: (0.9933, 0.997)), while for the Support Vector Machine model was 0.9524 (95% CI: (0.9467, 0.9577)).
+The lowest accuracy (0.7264) was obtained by Decision Tree model. The Random Forest model accuracy was 0.9954 (95% CI: (0.9933, 0.997)), while for the Support Vector Machine model was 0.9524 (95% CI: (0.9467, 0.9577)).
 The Random Forest algorithm performed better, so it is choosen to perform the test set prediction.
 
 
